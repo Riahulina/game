@@ -1,267 +1,674 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Live Attack Center — Host</title>
-<link rel="stylesheet" href="/style.css" />
-<style>
-  body { padding: 22px; }
-  .top { display:flex; align-items:center; justify-content:space-between; margin-bottom: 20px; }
-  .brand { display:flex; align-items:center; gap:12px; }
-  .brand-mark { width:36px; height:36px; border:1px solid var(--cyan); border-radius:8px; display:flex; align-items:center; justify-content:center; color:var(--cyan); font-weight:800; }
-  .title { font-size:16px; font-weight:800; letter-spacing:0.03em; }
-  .subtitle { font-size:10.5px; color:var(--text-dim); letter-spacing:0.1em; }
-  .status-live { font-size:11px; color: var(--green); display:flex; align-items:center; gap:6px; }
-  .dot { width:7px; height:7px; border-radius:50%; background: var(--green); box-shadow: 0 0 8px var(--green); }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Live Attack Center — Host</title>
+    <link rel="stylesheet" href="/style.css" />
+    <style>
+      body {
+        padding: 22px;
+      }
+      .top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .brand-mark {
+        width: 36px;
+        height: 36px;
+        border: 1px solid var(--cyan);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--cyan);
+        font-weight: 800;
+      }
+      .title {
+        font-size: 16px;
+        font-weight: 800;
+        letter-spacing: 0.03em;
+      }
+      .subtitle {
+        font-size: 10.5px;
+        color: var(--text-dim);
+        letter-spacing: 0.1em;
+      }
+      .status-live {
+        font-size: 11px;
+        color: var(--green);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--green);
+        box-shadow: 0 0 8px var(--green);
+      }
 
-  .grid { display:grid; grid-template-columns: 320px 1fr 340px; gap:16px; }
-  @media (max-width: 1100px) { .grid { grid-template-columns: 1fr; } }
+      .grid {
+        display: grid;
+        grid-template-columns: 320px 1fr 340px;
+        gap: 16px;
+      }
+      @media (max-width: 1100px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
 
-  .panel { padding: 16px; margin-bottom: 16px; }
-  .panel-head { display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px; }
-  .panel-title { font-size:11.5px; font-weight:700; letter-spacing:0.08em; color:var(--cyan); }
-  .panel-meta { font-size:10px; color:var(--text-dim); letter-spacing:0.08em; }
+      .panel {
+        padding: 16px;
+        margin-bottom: 16px;
+      }
+      .panel-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+      .panel-title {
+        font-size: 11.5px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        color: var(--cyan);
+      }
+      .panel-meta {
+        font-size: 10px;
+        color: var(--text-dim);
+        letter-spacing: 0.08em;
+      }
 
-  .threat-num { font-size: 44px; font-weight: 800; }
-  .threat-bar { height:6px; border-radius:3px; background:#12202f; margin: 10px 0 6px; overflow:hidden; }
-  .threat-bar-fill { height:100%; background: linear-gradient(90deg, var(--green), var(--amber), var(--red)); width:0%; transition: width .4s; }
-  .threat-label { font-size:11px; color:var(--text-dim); display:flex; justify-content:space-between; }
+      .threat-num {
+        font-size: 44px;
+        font-weight: 800;
+      }
+      .threat-bar {
+        height: 6px;
+        border-radius: 3px;
+        background: #12202f;
+        margin: 10px 0 6px;
+        overflow: hidden;
+      }
+      .threat-bar-fill {
+        height: 100%;
+        background: linear-gradient(
+          90deg,
+          var(--green),
+          var(--amber),
+          var(--red)
+        );
+        width: 0%;
+        transition: width 0.4s;
+      }
+      .threat-label {
+        font-size: 11px;
+        color: var(--text-dim);
+        display: flex;
+        justify-content: space-between;
+      }
 
-  .telemetry-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-  .telemetry-box { background:#0d1420; border:1px solid var(--panel-border); border-radius:6px; padding:12px; }
-  .telemetry-box .k { font-size:10px; color:var(--text-dim); letter-spacing:0.08em; }
-  .telemetry-box .v { font-size: 22px; font-weight:800; margin-top:4px; }
+      .telemetry-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .telemetry-box {
+        background: #0d1420;
+        border: 1px solid var(--panel-border);
+        border-radius: 6px;
+        padding: 12px;
+      }
+      .telemetry-box .k {
+        font-size: 10px;
+        color: var(--text-dim);
+        letter-spacing: 0.08em;
+      }
+      .telemetry-box .v {
+        font-size: 22px;
+        font-weight: 800;
+        margin-top: 4px;
+      }
 
-  .gen-row { display:flex; gap:8px; margin-bottom:10px; }
-  .gen-row input { flex:1; padding:9px 10px; border-radius:6px; border:1px solid var(--panel-border); background:#0d1420; color:var(--text); font-family:inherit; font-size:12.5px; }
-  .btn { padding:9px 12px; border-radius:6px; border:1px solid var(--cyan); background:transparent; color:var(--cyan); font-family:inherit; font-size:11.5px; font-weight:700; letter-spacing:0.04em; }
-  .btn:hover { background: rgba(45,212,255,0.1); }
-  .btn-danger { border-color: var(--red); color: var(--red); width:100%; margin-top:6px; }
-  .btn-danger:hover { background: rgba(255,59,92,0.1); }
+      .gen-row {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 10px;
+      }
+      .gen-row input {
+        flex: 1;
+        padding: 9px 10px;
+        border-radius: 6px;
+        border: 1px solid var(--panel-border);
+        background: #0d1420;
+        color: var(--text);
+        font-family: inherit;
+        font-size: 12.5px;
+      }
+      .btn {
+        padding: 9px 12px;
+        border-radius: 6px;
+        border: 1px solid var(--cyan);
+        background: transparent;
+        color: var(--cyan);
+        font-family: inherit;
+        font-size: 11.5px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+      }
+      .btn:hover {
+        background: rgba(45, 212, 255, 0.1);
+      }
+      .btn-danger {
+        border-color: var(--red);
+        color: var(--red);
+        width: 100%;
+        margin-top: 6px;
+      }
+      .btn-danger:hover {
+        background: rgba(255, 59, 92, 0.1);
+      }
 
-  .link-list { max-height: 180px; overflow-y:auto; display:flex; flex-direction:column; gap:6px; }
-  .link-item { display:flex; justify-content:space-between; align-items:center; background:#0d1420; border:1px solid var(--panel-border); border-radius:6px; padding:8px 10px; font-size:11.5px; }
-  .link-item a { color:#4fb0ff; text-decoration:none; }
-  .copy-btn { font-size:10px; color:var(--text-dim); border:1px solid var(--panel-border); border-radius:4px; padding:3px 6px; background:none; }
+      .link-list {
+        max-height: 180px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .link-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #0d1420;
+        border: 1px solid var(--panel-border);
+        border-radius: 6px;
+        padding: 8px 10px;
+        font-size: 11.5px;
+      }
+      .link-item a {
+        color: #4fb0ff;
+        text-decoration: none;
+      }
+      .copy-btn {
+        font-size: 10px;
+        color: var(--text-dim);
+        border: 1px solid var(--panel-border);
+        border-radius: 4px;
+        padding: 3px 6px;
+        background: none;
+      }
 
-  .targets-list { display:flex; flex-direction:column; gap:8px; max-height: 420px; overflow-y:auto; }
-  .target-row { display:flex; align-items:center; justify-content:space-between; background:#0d1420; border:1px solid var(--panel-border); border-radius:6px; padding:10px 12px; }
-  .target-name { font-size:12.5px; font-weight:700; }
-  .target-sub { font-size:10px; color:var(--text-dim); }
-  .badge { font-size:10px; font-weight:800; letter-spacing:0.05em; padding:3px 8px; border-radius:10px; }
-  .badge-invited { background:rgba(92,113,131,0.15); color:var(--text-dim); border:1px solid var(--panel-border); }
-  .badge-joined { background:rgba(45,212,255,0.12); color:var(--cyan); border:1px solid rgba(45,212,255,0.4); }
-  .badge-locked { background:rgba(255,59,92,0.12); color:var(--red); border:1px solid rgba(255,59,92,0.4); animation: badgePulse 1s ease-in-out infinite; }
-  .badge-revealed { background:rgba(34,255,136,0.12); color:var(--green); border:1px solid rgba(34,255,136,0.4); }
-  @keyframes badgePulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+      .targets-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        max-height: 420px;
+        overflow-y: auto;
+      }
+      .target-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #0d1420;
+        border: 1px solid var(--panel-border);
+        border-radius: 6px;
+        padding: 10px 12px;
+      }
+      .target-name {
+        font-size: 12.5px;
+        font-weight: 700;
+      }
+      .target-sub {
+        font-size: 10px;
+        color: var(--text-dim);
+      }
+      .badge {
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+        padding: 3px 8px;
+        border-radius: 10px;
+      }
+      .badge-invited {
+        background: rgba(92, 113, 131, 0.15);
+        color: var(--text-dim);
+        border: 1px solid var(--panel-border);
+      }
+      .badge-joined {
+        background: rgba(45, 212, 255, 0.12);
+        color: var(--cyan);
+        border: 1px solid rgba(45, 212, 255, 0.4);
+      }
+      .badge-locked {
+        background: rgba(255, 59, 92, 0.12);
+        color: var(--red);
+        border: 1px solid rgba(255, 59, 92, 0.4);
+        animation: badgePulse 1s ease-in-out infinite;
+      }
+      .badge-revealed {
+        background: rgba(34, 255, 136, 0.12);
+        color: var(--green);
+        border: 1px solid rgba(34, 255, 136, 0.4);
+      }
+      @keyframes badgePulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
 
-  .empty { text-align:center; color:var(--text-dim); font-size:11.5px; padding: 30px 0; }
+      .empty {
+        text-align: center;
+        color: var(--text-dim);
+        font-size: 11.5px;
+        padding: 30px 0;
+      }
 
-  .target-actions { display:flex; gap:6px; align-items:center; }
-  .action-btn { font-size:10px; font-weight:700; letter-spacing:0.04em; padding:5px 9px; border-radius:5px; font-family:inherit; }
-  .action-trigger { border:1px solid var(--red); color:var(--red); background:transparent; }
-  .action-trigger:hover { background: rgba(255,59,92,0.12); }
-  .action-end { border:1px solid var(--green); color:var(--green); background:transparent; }
-  .action-end:hover { background: rgba(34,255,136,0.12); }
+      .target-actions {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+      .action-btn {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        padding: 5px 9px;
+        border-radius: 5px;
+        font-family: inherit;
+      }
+      .action-trigger {
+        border: 1px solid var(--red);
+        color: var(--red);
+        background: transparent;
+      }
+      .action-trigger:hover {
+        background: rgba(255, 59, 92, 0.12);
+      }
+      .action-end {
+        border: 1px solid var(--green);
+        color: var(--green);
+        background: transparent;
+      }
+      .action-end:hover {
+        background: rgba(34, 255, 136, 0.12);
+      }
 
-  .bulk-actions { display:flex; gap:8px; margin-bottom:14px; }
-  .bulk-actions .btn { flex:1; font-size:10.5px; }
+      .bulk-actions {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 14px;
+      }
+      .bulk-actions .btn {
+        flex: 1;
+        font-size: 10.5px;
+      }
 
-  .event-stream { max-height: 460px; overflow-y:auto; display:flex; flex-direction:column-reverse; gap:6px; font-size:11.5px; }
-  .event-line { color: var(--text-dim); }
-  .event-line b { color: var(--text); }
-  .event-line.warn { color: var(--red); }
-</style>
-</head>
-<body>
+      .event-stream {
+        max-height: 460px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column-reverse;
+        gap: 6px;
+        font-size: 11.5px;
+      }
+      .event-line {
+        color: var(--text-dim);
+      }
+      .event-line b {
+        color: var(--text);
+      }
+      .event-line.warn {
+        color: var(--red);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="top">
+      <div class="brand">
+        <div class="brand-mark">//</div>
+        <div>
+          <div class="title">
+            LIVE ATTACK CENTER <span style="color: var(--red)">— HOST</span>
+          </div>
+          <div class="subtitle">
+            CYBER SECURITY AWARENESS // SIMULATION ENVIRONMENT
+          </div>
+        </div>
+      </div>
+      <div class="status-live">
+        <button class="btn" id="fullscreenBtn" style="margin-right: 10px">
+          ⛶ FULLSCREEN
+        </button>
+        <span class="dot"></span> SIMULATION ONLINE
+        <span
+          id="clock"
+          style="color: var(--text-dim); margin-left: 10px"
+        ></span>
+      </div>
+    </div>
 
-  <div class="top">
-    <div class="brand">
-      <div class="brand-mark">//</div>
+    <div class="grid">
+      <!-- LEFT COLUMN -->
       <div>
-        <div class="title">LIVE ATTACK CENTER <span style="color:var(--red)">— HOST</span></div>
-        <div class="subtitle">CYBER SECURITY AWARENESS // SIMULATION ENVIRONMENT</div>
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">THREAT LEVEL</span
+            ><span class="panel-meta">SYS-ALPHA</span>
+          </div>
+          <div class="threat-num glow-red" id="threatNum">0</div>
+          <div class="threat-bar">
+            <div class="threat-bar-fill" id="threatBar"></div>
+          </div>
+          <div class="threat-label">
+            <span id="threatText">LOW / MONITORING</span
+            ><span id="targetCount">0 TARGETS</span>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">SYSTEM TELEMETRY</span
+            ><span class="panel-meta">LIVE</span>
+          </div>
+          <div class="telemetry-grid">
+            <div class="telemetry-box">
+              <div class="k">CONNECTED</div>
+              <div class="v glow-cyan" id="tConnected">0</div>
+            </div>
+            <div class="telemetry-box">
+              <div class="k">LOCKED NOW</div>
+              <div class="v glow-red" id="tCompromised">0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MIDDLE COLUMN -->
+      <div>
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">ACTIVE TARGETS</span
+            ><span class="panel-meta">REALTIME</span>
+          </div>
+          <div class="bulk-actions">
+            <button
+              class="btn"
+              id="triggerAllBtn"
+              style="border-color: var(--red); color: var(--red)"
+            >
+              ⚡ TRIGGER ALL
+            </button>
+            <button
+              class="btn"
+              id="endAllBtn"
+              style="border-color: var(--green); color: var(--green)"
+            >
+              ✅ END ALL
+            </button>
+          </div>
+          <div class="targets-list" id="targetsList">
+            <div class="empty">WAITING FOR PARTICIPANTS...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN -->
+      <div>
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">COMMAND CENTER</span
+            ><span class="panel-meta">ADMIN</span>
+          </div>
+
+          <div
+            style="
+              font-size: 10px;
+              color: var(--text-dim);
+              letter-spacing: 0.06em;
+              margin-bottom: 6px;
+            "
+          >
+            LINK PENDAFTARAN (bagikan ke semua peserta)
+          </div>
+          <div class="link-item" style="margin-bottom: 16px">
+            <a href="#" id="joinLinkText" target="_blank"></a>
+            <button class="copy-btn" id="joinCopyBtn">COPY</button>
+          </div>
+
+          <div
+            style="
+              font-size: 10px;
+              color: var(--text-dim);
+              letter-spacing: 0.06em;
+              margin-bottom: 6px;
+            "
+          >
+            TRIGGER BERGELOMBANG
+          </div>
+          <div class="gen-row">
+            <input
+              type="number"
+              id="waveSize"
+              placeholder="Jumlah / gel."
+              value="5"
+              min="1"
+              style="max-width: 110px"
+            />
+            <input
+              type="number"
+              id="waveInterval"
+              placeholder="Jeda (detik)"
+              value="2"
+              min="0.5"
+              step="0.5"
+              style="max-width: 110px"
+            />
+            <button
+              class="btn"
+              id="waveBtn"
+              style="border-color: var(--red); color: var(--red)"
+            >
+              MULAI
+            </button>
+          </div>
+
+          <div
+            style="
+              font-size: 10px;
+              color: var(--text-dim);
+              letter-spacing: 0.06em;
+              margin: 14px 0 6px;
+            "
+          >
+            BUAT LINK MANUAL (opsional)
+          </div>
+          <div class="gen-row">
+            <input
+              type="text"
+              id="nameInput"
+              placeholder="Nama peserta (opsional)"
+            />
+            <button class="btn" id="genBtn">+ LINK</button>
+          </div>
+          <div class="link-list" id="linkList"></div>
+
+          <button class="btn btn-danger" id="resetBtn">
+            ■ RESET ALL TARGETS
+          </button>
+          <div
+            style="font-size: 10px; color: var(--text-dim); margin-top: 10px"
+          >
+            [i] Peserta main game dulu → TRIGGER buat kunci layar → END buat
+            buka simulasinya. Auto-terbuka otomatis dlm 20 detik kalau lupa END.
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">EVENT STREAM</span
+            ><span class="panel-meta">LAST EVENTS</span>
+          </div>
+          <div class="event-stream" id="eventStream"></div>
+        </div>
       </div>
     </div>
-    <div class="status-live">
-      <button class="btn" id="fullscreenBtn" style="margin-right:10px;">⛶ FULLSCREEN</button>
-      <span class="dot"></span> SIMULATION ONLINE <span id="clock" style="color:var(--text-dim); margin-left:10px;"></span>
-    </div>
-  </div>
 
-  <div class="grid">
-    <!-- LEFT COLUMN -->
-    <div>
-      <div class="panel">
-        <div class="panel-head"><span class="panel-title">THREAT LEVEL</span><span class="panel-meta">SYS-ALPHA</span></div>
-        <div class="threat-num glow-red" id="threatNum">0</div>
-        <div class="threat-bar"><div class="threat-bar-fill" id="threatBar"></div></div>
-        <div class="threat-label"><span id="threatText">LOW / MONITORING</span><span id="targetCount">0 TARGETS</span></div>
-      </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const socket = io();
+      const origin = window.location.origin;
 
-      <div class="panel">
-        <div class="panel-head"><span class="panel-title">SYSTEM TELEMETRY</span><span class="panel-meta">LIVE</span></div>
-        <div class="telemetry-grid">
-          <div class="telemetry-box"><div class="k">CONNECTED</div><div class="v glow-cyan" id="tConnected">0</div></div>
-          <div class="telemetry-box"><div class="k">LOCKED NOW</div><div class="v glow-red" id="tCompromised">0</div></div>
-        </div>
-      </div>
-    </div>
+      // ── Proteksi dashboard: minta password sekali per sesi browser ──
+      let hostToken = sessionStorage.getItem("hostToken");
+      while (!hostToken) {
+        hostToken = prompt("Masukkan password host untuk membuka dashboard:");
+        if (hostToken === null) hostToken = "";
+      }
+      sessionStorage.setItem("hostToken", hostToken);
 
-    <!-- MIDDLE COLUMN -->
-    <div>
-      <div class="panel">
-        <div class="panel-head"><span class="panel-title">ACTIVE TARGETS</span><span class="panel-meta">REALTIME</span></div>
-        <div class="bulk-actions">
-          <button class="btn" id="triggerAllBtn" style="border-color:var(--red); color:var(--red);">⚡ TRIGGER ALL</button>
-          <button class="btn" id="endAllBtn" style="border-color:var(--green); color:var(--green);">✅ END ALL</button>
-        </div>
-        <div class="targets-list" id="targetsList">
-          <div class="empty">WAITING FOR PARTICIPANTS...</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- RIGHT COLUMN -->
-    <div>
-      <div class="panel">
-        <div class="panel-head"><span class="panel-title">COMMAND CENTER</span><span class="panel-meta">ADMIN</span></div>
-
-        <div style="font-size:10px; color:var(--text-dim); letter-spacing:0.06em; margin-bottom:6px;">LINK PENDAFTARAN (bagikan ke semua peserta)</div>
-        <div class="link-item" style="margin-bottom:16px;">
-          <a href="#" id="joinLinkText" target="_blank"></a>
-          <button class="copy-btn" id="joinCopyBtn">COPY</button>
-        </div>
-
-        <div style="font-size:10px; color:var(--text-dim); letter-spacing:0.06em; margin-bottom:6px;">TRIGGER BERGELOMBANG</div>
-        <div class="gen-row">
-          <input type="number" id="waveSize" placeholder="Jumlah / gel." value="5" min="1" style="max-width:110px;" />
-          <input type="number" id="waveInterval" placeholder="Jeda (detik)" value="2" min="0.5" step="0.5" style="max-width:110px;" />
-          <button class="btn" id="waveBtn" style="border-color:var(--red); color:var(--red);">MULAI</button>
-        </div>
-
-        <div style="font-size:10px; color:var(--text-dim); letter-spacing:0.06em; margin: 14px 0 6px;">BUAT LINK MANUAL (opsional)</div>
-        <div class="gen-row">
-          <input type="text" id="nameInput" placeholder="Nama peserta (opsional)" />
-          <button class="btn" id="genBtn">+ LINK</button>
-        </div>
-        <div class="link-list" id="linkList"></div>
-
-        <button class="btn btn-danger" id="resetBtn">■ RESET ALL TARGETS</button>
-        <div style="font-size:10px; color:var(--text-dim); margin-top:10px;">
-          [i] Peserta main game dulu → TRIGGER buat kunci layar → END buat buka simulasinya. Auto-terbuka otomatis dlm 20 detik kalau lupa END.
-        </div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-head"><span class="panel-title">EVENT STREAM</span><span class="panel-meta">LAST EVENTS</span></div>
-        <div class="event-stream" id="eventStream"></div>
-      </div>
-    </div>
-  </div>
-
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
-    const socket = io();
-    const origin = window.location.origin;
-    socket.on("connect", () => socket.emit("host:subscribe"));
-
-    // ── Link pendaftaran mandiri ──
-    const joinUrl = origin + "/join";
-    document.getElementById("joinLinkText").href = joinUrl;
-    document.getElementById("joinLinkText").textContent = joinUrl;
-    document.getElementById("joinCopyBtn").addEventListener("click", (e) => {
-      navigator.clipboard.writeText(joinUrl);
-      e.target.textContent = "COPIED";
-      setTimeout(() => (e.target.textContent = "COPY"), 1200);
-    });
-
-    // ── Trigger bergelombang ──
-    document.getElementById("waveBtn").addEventListener("click", () => {
-      const batchSize = document.getElementById("waveSize").value;
-      const intervalMs = parseFloat(document.getElementById("waveInterval").value) * 1000;
-      socket.emit("host:trigger_wave", { batchSize, intervalMs });
-    });
-
-    const STAGE_LABEL = {
-      invited: "INVITED", joined: "MAIN GAME", locked: "🔒 LOCKED",
-      revealed: "SELESAI"
-    };
-
-    let knownEventKeys = new Set();
-
-    document.getElementById("triggerAllBtn").addEventListener("click", () => {
-      socket.emit("host:trigger_attack", { id: "all" });
-    });
-    document.getElementById("endAllBtn").addEventListener("click", () => {
-      socket.emit("host:end_attack", { id: "all" });
-    });
-
-    document.getElementById("genBtn").addEventListener("click", async () => {
-      const name = document.getElementById("nameInput").value;
-      const res = await fetch("/api/participants", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name })
+      socket.on("connect", () =>
+        socket.emit("host:subscribe", { token: hostToken }),
+      );
+      socket.on("host:unauthorized", () => {
+        alert("Password salah. Halaman akan dimuat ulang.");
+        sessionStorage.removeItem("hostToken");
+        location.reload();
       });
-      const data = await res.json();
-      document.getElementById("nameInput").value = "";
-      addLinkRow(data.id, data.link, name);
-    });
 
-    document.getElementById("resetBtn").addEventListener("click", async () => {
-      if (!confirm("Reset semua target & link peserta?")) return;
-      await fetch("/api/reset", { method: "POST" });
-      document.getElementById("linkList").innerHTML = "";
-      document.getElementById("eventStream").innerHTML = "";
-      knownEventKeys.clear();
-    });
-
-    function addLinkRow(id, link, name) {
-      const full = origin + link;
-      const row = document.createElement("div");
-      row.className = "link-item";
-      row.innerHTML = `<a href="${full}" target="_blank">${name || id} → ${link}</a>
-        <button class="copy-btn" data-link="${full}">COPY</button>`;
-      row.querySelector(".copy-btn").addEventListener("click", (e) => {
-        navigator.clipboard.writeText(e.target.dataset.link);
+      // ── Link pendaftaran mandiri ──
+      const joinUrl = origin + "/join";
+      document.getElementById("joinLinkText").href = joinUrl;
+      document.getElementById("joinLinkText").textContent = joinUrl;
+      document.getElementById("joinCopyBtn").addEventListener("click", (e) => {
+        navigator.clipboard.writeText(joinUrl);
         e.target.textContent = "COPIED";
         setTimeout(() => (e.target.textContent = "COPY"), 1200);
       });
-      document.getElementById("linkList").prepend(row);
-    }
 
-    socket.on("state:update", ({ participants, stats }) => {
-      // threat panel
-      document.getElementById("threatNum").textContent = String(stats.threatIndex).padStart(2, "0");
-      document.getElementById("threatBar").style.width = stats.threatIndex + "%";
-      document.getElementById("targetCount").textContent = stats.total + " TARGETS";
-      document.getElementById("threatText").textContent =
-        stats.threatIndex === 0 ? "LOW / MONITORING" :
-        stats.threatIndex < 50 ? "ELEVATED / ACTIVE" : "CRITICAL / ACTIVE";
+      // ── Trigger bergelombang ──
+      document.getElementById("waveBtn").addEventListener("click", () => {
+        const batchSize = document.getElementById("waveSize").value;
+        const intervalMs =
+          parseFloat(document.getElementById("waveInterval").value) * 1000;
+        socket.emit("host:trigger_wave", {
+          batchSize,
+          intervalMs,
+          token: hostToken,
+        });
+      });
 
-      document.getElementById("tConnected").textContent = stats.active;
-      document.getElementById("tCompromised").textContent = stats.locked;
+      const STAGE_LABEL = {
+        invited: "INVITED",
+        joined: "MAIN GAME",
+        locked: "🔒 LOCKED",
+        revealed: "SELESAI",
+      };
 
-      // targets list
-      const list = document.getElementById("targetsList");
-      if (participants.length === 0) {
-        list.innerHTML = '<div class="empty">WAITING FOR PARTICIPANTS...</div>';
-      } else {
-        list.innerHTML = "";
-        participants
-          .slice()
-          .sort((a, b) => (b.lastEventAt || 0) - (a.lastEventAt || 0))
-          .forEach((p) => {
-            const row = document.createElement("div");
-            row.className = "target-row";
-            let actionBtn = "";
-            if (p.status === "joined") {
-              actionBtn = `<button class="action-btn action-trigger" data-act="trigger" data-id="${p.id}">⚡ TRIGGER</button>`;
-            } else if (p.status === "locked") {
-              actionBtn = `<button class="action-btn action-end" data-act="end" data-id="${p.id}">✅ END</button>`;
-            }
-            row.innerHTML = `
+      let knownEventKeys = new Set();
+
+      document.getElementById("triggerAllBtn").addEventListener("click", () => {
+        socket.emit("host:trigger_attack", { id: "all", token: hostToken });
+      });
+      document.getElementById("endAllBtn").addEventListener("click", () => {
+        socket.emit("host:end_attack", { id: "all", token: hostToken });
+      });
+
+      document.getElementById("genBtn").addEventListener("click", async () => {
+        const name = document.getElementById("nameInput").value;
+        const res = await fetch("/api/participants", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-host-token": hostToken,
+          },
+          body: JSON.stringify({ name }),
+        });
+        const data = await res.json();
+        document.getElementById("nameInput").value = "";
+        addLinkRow(data.id, data.link, name);
+      });
+
+      document
+        .getElementById("resetBtn")
+        .addEventListener("click", async () => {
+          if (!confirm("Reset semua target & link peserta?")) return;
+          await fetch("/api/reset", {
+            method: "POST",
+            headers: { "x-host-token": hostToken },
+          });
+          document.getElementById("linkList").innerHTML = "";
+          document.getElementById("eventStream").innerHTML = "";
+          knownEventKeys.clear();
+        });
+
+      function addLinkRow(id, link, name) {
+        const full = origin + link;
+        const row = document.createElement("div");
+        row.className = "link-item";
+        row.innerHTML = `<a href="${full}" target="_blank">${name || id} → ${link}</a>
+        <button class="copy-btn" data-link="${full}">COPY</button>`;
+        row.querySelector(".copy-btn").addEventListener("click", (e) => {
+          navigator.clipboard.writeText(e.target.dataset.link);
+          e.target.textContent = "COPIED";
+          setTimeout(() => (e.target.textContent = "COPY"), 1200);
+        });
+        document.getElementById("linkList").prepend(row);
+      }
+
+      socket.on("state:update", ({ participants, stats }) => {
+        // threat panel
+        document.getElementById("threatNum").textContent = String(
+          stats.threatIndex,
+        ).padStart(2, "0");
+        document.getElementById("threatBar").style.width =
+          stats.threatIndex + "%";
+        document.getElementById("targetCount").textContent =
+          stats.total + " TARGETS";
+        document.getElementById("threatText").textContent =
+          stats.threatIndex === 0
+            ? "LOW / MONITORING"
+            : stats.threatIndex < 50
+              ? "ELEVATED / ACTIVE"
+              : "CRITICAL / ACTIVE";
+
+        document.getElementById("tConnected").textContent = stats.active;
+        document.getElementById("tCompromised").textContent = stats.locked;
+
+        // targets list
+        const list = document.getElementById("targetsList");
+        if (participants.length === 0) {
+          list.innerHTML =
+            '<div class="empty">WAITING FOR PARTICIPANTS...</div>';
+        } else {
+          list.innerHTML = "";
+          participants
+            .slice()
+            .sort((a, b) => (b.lastEventAt || 0) - (a.lastEventAt || 0))
+            .forEach((p) => {
+              const row = document.createElement("div");
+              row.className = "target-row";
+              let actionBtn = "";
+              if (p.status === "joined") {
+                actionBtn = `<button class="action-btn action-trigger" data-act="trigger" data-id="${p.id}">⚡ TRIGGER</button>`;
+              } else if (p.status === "locked") {
+                actionBtn = `<button class="action-btn action-end" data-act="end" data-id="${p.id}">✅ END</button>`;
+              }
+              row.innerHTML = `
               <div>
                 <div class="target-name">${p.name}</div>
                 <div class="target-sub">ID: ${p.id}</div>
@@ -271,62 +678,75 @@
                 <span class="badge badge-${p.status}">${STAGE_LABEL[p.status] || p.status}</span>
               </div>
             `;
-            list.appendChild(row);
+              list.appendChild(row);
+            });
+          list.querySelectorAll(".action-btn").forEach((btn) => {
+            btn.addEventListener("click", () => {
+              const event =
+                btn.dataset.act === "trigger"
+                  ? "host:trigger_attack"
+                  : "host:end_attack";
+              socket.emit(event, { id: btn.dataset.id, token: hostToken });
+            });
           });
-        list.querySelectorAll(".action-btn").forEach((btn) => {
-          btn.addEventListener("click", () => {
-            const event = btn.dataset.act === "trigger" ? "host:trigger_attack" : "host:end_attack";
-            socket.emit(event, { id: btn.dataset.id });
-          });
-        });
-      }
+        }
 
-      // event stream (append only new events)
-      participants.forEach((p) => {
-        (p.events || []).forEach((ev) => {
-          const key = p.id + "-" + ev.at + "-" + ev.type;
-          if (knownEventKeys.has(key)) return;
-          knownEventKeys.add(key);
-          const line = document.createElement("div");
-          const time = new Date(ev.at).toLocaleTimeString();
-          const isWarn = ev.type === "attack_triggered";
-          line.className = "event-line" + (isWarn ? " warn" : "");
-          line.innerHTML = `[${time}] <b>${p.name}</b> — ${describeEvent(ev.type)}`;
-          document.getElementById("eventStream").prepend(line);
+        // event stream (append only new events)
+        participants.forEach((p) => {
+          (p.events || []).forEach((ev) => {
+            const key = p.id + "-" + ev.at + "-" + ev.type;
+            if (knownEventKeys.has(key)) return;
+            knownEventKeys.add(key);
+            const line = document.createElement("div");
+            const time = new Date(ev.at).toLocaleTimeString();
+            const isWarn = ev.type === "attack_triggered";
+            line.className = "event-line" + (isWarn ? " warn" : "");
+            line.innerHTML = `[${time}] <b>${p.name}</b> — ${describeEvent(ev.type)}`;
+            document.getElementById("eventStream").prepend(line);
+          });
         });
       });
-    });
 
-    function describeEvent(type) {
-      switch (type) {
-        case "invited": return "link dibuat oleh host";
-        case "self_registered": return "mendaftar sendiri & mulai game";
-        case "page_opened": return "membuka link & mulai main game";
-        case "attack_triggered": return "🔒 DIKUNCI oleh host";
-        case "host_revealed": return "dibuka manual oleh host";
-        case "auto_revealed": return "dibuka otomatis (timeout 20s)";
-        default: return type;
+      function describeEvent(type) {
+        switch (type) {
+          case "invited":
+            return "link dibuat oleh host";
+          case "self_registered":
+            return "mendaftar sendiri & mulai game";
+          case "page_opened":
+            return "membuka link & mulai main game";
+          case "attack_triggered":
+            return "🔒 DIKUNCI oleh host";
+          case "host_revealed":
+            return "dibuka manual oleh host";
+          case "auto_revealed":
+            return "dibuka otomatis (timeout 20s)";
+          default:
+            return type;
+        }
       }
-    }
 
-    // ── Fullscreen dashboard ──
-    const fsBtn = document.getElementById("fullscreenBtn");
-    fsBtn.addEventListener("click", () => {
-      if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(() => {});
-      } else {
-        document.exitFullscreen().catch(() => {});
+      // ── Fullscreen dashboard ──
+      const fsBtn = document.getElementById("fullscreenBtn");
+      fsBtn.addEventListener("click", () => {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        } else {
+          document.exitFullscreen().catch(() => {});
+        }
+      });
+      document.addEventListener("fullscreenchange", () => {
+        fsBtn.textContent = document.fullscreenElement
+          ? "⛶ EXIT FULLSCREEN"
+          : "⛶ FULLSCREEN";
+      });
+
+      function tickClock() {
+        document.getElementById("clock").textContent =
+          new Date().toLocaleTimeString();
       }
-    });
-    document.addEventListener("fullscreenchange", () => {
-      fsBtn.textContent = document.fullscreenElement ? "⛶ EXIT FULLSCREEN" : "⛶ FULLSCREEN";
-    });
-
-    function tickClock() {
-      document.getElementById("clock").textContent = new Date().toLocaleTimeString();
-    }
-    setInterval(tickClock, 1000);
-    tickClock();
-  </script>
-</body>
+      setInterval(tickClock, 1000);
+      tickClock();
+    </script>
+  </body>
 </html>

@@ -25,7 +25,7 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use(express.json());
 
 // Buka localhost:3000 langsung diarahkan ke dashboard host
-app.get("/", (req, res) => res.redirect("/host.html"));
+app.get("/", (req, res) => res.redirect("/join"));
 
 // ── In-memory state (cukup untuk sesi sharing/demo, reset tiap restart) ──
 const participants = new Map();
@@ -35,6 +35,8 @@ const participants = new Map();
 
 const THREAT_STAGES = ["invited", "joined", "locked", "revealed"];
 const AUTO_REVEAL_MS = 20000; // jaring pengaman: auto-reveal kalau host lupa klik "End"
+// Password dashboard host — WAJIB diganti sebelum dipakai di hosting publik.
+const HOST_PASSWORD = process.env.HOST_PASSWORD || "game123";
 
 function broadcastState() {
   io.to("hosts").emit("state:update", {
@@ -53,7 +55,8 @@ function computeStats() {
     locked,
     revealed,
     active: list.filter((p) => p.status !== "invited").length,
-    threatIndex: total === 0 ? 0 : Math.round(((locked + revealed) / total) * 100),
+    threatIndex:
+      total === 0 ? 0 : Math.round(((locked + revealed) / total) * 100),
   };
 }
 
@@ -67,6 +70,9 @@ function logEvent(id, type, meta = {}) {
 
 // ── REST: fasilitator membuat link peserta baru dari host dashboard ──
 app.post("/api/participants", (req, res) => {
+  if (req.headers["x-host-token"] !== HOST_PASSWORD)
+    return res.status(401).json({ error: "unauthorized" });
+  const { name } = req.body;
   const { name } = req.body;
   const id = nanoid(8);
   participants.set(id, {
@@ -82,6 +88,9 @@ app.post("/api/participants", (req, res) => {
 });
 
 app.post("/api/reset", (req, res) => {
+  if (req.headers["x-host-token"] !== HOST_PASSWORD)
+    return res.status(401).json({ error: "unauthorized" });
+  participants.forEach((p) => p.lockTimer && clearTimeout(p.lockTimer));
   participants.forEach((p) => p.lockTimer && clearTimeout(p.lockTimer));
   participants.clear();
   broadcastState();
@@ -125,13 +134,22 @@ function endParticipant(p) {
 }
 
 io.on("connection", (socket) => {
-  socket.on("host:subscribe", () => {
+  socket.on("host:subscribe", ({ token } = {}) => {
+    if (token !== HOST_PASSWORD) {
+      socket.emit("host:unauthorized");
+      return;
+    }
+    socket.data.isHost = true;
     socket.join("hosts");
     socket.emit("state:update", {
       participants: Array.from(participants.values()),
       stats: computeStats(),
     });
   });
+
+  function requireHost(socket) {
+    return socket.data.isHost === true;
+  }
 
   // Pendaftaran mandiri lewat link /join — peserta isi nama sendiri
   socket.on("participant:register", ({ name }, callback) => {
@@ -169,17 +187,22 @@ io.on("connection", (socket) => {
 
   // Host memicu "serangan" ke satu peserta tertentu, atau semua ('all')
   socket.on("host:trigger_attack", ({ id }) => {
-    const targets = id === "all"
-      ? Array.from(participants.values()).filter((p) => p.status === "joined")
-      : [participants.get(id)].filter(Boolean);
+    if (!requireHost(socket)) return;
+    const targets =
+      id === "all"
+        ? Array.from(participants.values()).filter((p) => p.status === "joined")
+        : [participants.get(id)].filter(Boolean);
     targets.forEach(triggerParticipant);
   });
 
   // Host memicu serangan bergelombang: N orang setiap interval detik
   socket.on("host:trigger_wave", ({ batchSize, intervalMs }) => {
+    if (!requireHost(socket)) return;
     const size = Math.max(1, parseInt(batchSize, 10) || 5);
     const gap = Math.max(500, parseInt(intervalMs, 10) || 2000);
-    const targets = Array.from(participants.values()).filter((p) => p.status === "joined");
+    const targets = Array.from(participants.values()).filter(
+      (p) => p.status === "joined",
+    );
 
     let i = 0;
     function fireNext() {
@@ -194,9 +217,11 @@ io.on("connection", (socket) => {
 
   // Host mengakhiri "serangan" lebih cepat (tombol END)
   socket.on("host:end_attack", ({ id }) => {
-    const targets = id === "all"
-      ? Array.from(participants.values()).filter((p) => p.status === "locked")
-      : [participants.get(id)].filter(Boolean);
+    if (!requireHost(socket)) return;
+    const targets =
+      id === "all"
+        ? Array.from(participants.values()).filter((p) => p.status === "locked")
+        : [participants.get(id)].filter(Boolean);
     targets.forEach(endParticipant);
   });
 });
