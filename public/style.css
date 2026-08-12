@@ -1,0 +1,50 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=swap');
+
+:root {
+  --bg: #05080d;
+  --panel: #0a0f18;
+  --panel-border: #1c2836;
+  --cyan: #2dd4ff;
+  --green: #22ff88;
+  --red: #ff3b5c;
+  --amber: #ffb020;
+  --text: #cfe3f0;
+  --text-dim: #5c7183;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  background-image:
+    linear-gradient(rgba(45,212,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(45,212,255,0.03) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+}
+
+.eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+.glow-cyan { color: var(--cyan); text-shadow: 0 0 12px rgba(45,212,255,0.4); }
+.glow-red { color: var(--red); text-shadow: 0 0 12px rgba(255,59,92,0.4); }
+.glow-green { color: var(--green); text-shadow: 0 0 12px rgba(34,255,136,0.4); }
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+::selection { background: var(--cyan); color: #000; }

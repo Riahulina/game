@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tebak-Tebakan Seru</title>
+<link rel="stylesheet" href="/style.css" />
+<style>
+  body { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+  .stage { display: none; width: 100%; }
+  .stage.active { display: flex; }
+
+  /* ---- Stage: registrasi ---- */
+  #stage-register { max-width: 400px; flex-direction: column; }
+  .reg-card { padding: 28px; text-align:center; }
+  .reg-title { font-size:18px; font-weight:800; margin-bottom: 6px; }
+  .reg-sub { font-size:12px; color:var(--text-dim); margin-bottom:18px; }
+  .reg-card input {
+    width:100%; padding: 12px 14px; border-radius:8px; border:1px solid var(--panel-border);
+    background:#0d1420; color:var(--text); font-family:inherit; font-size:14px; outline:none; text-align:center;
+  }
+  .reg-card input:focus { border-color: var(--cyan); }
+  .reg-btn {
+    width:100%; margin-top:12px; padding:12px; border-radius:8px; border:none;
+    background: var(--cyan); color:#001b24; font-weight:800; font-size:13px; letter-spacing:0.04em;
+  }
+
+  /* ---- Stage: COIN RUSH (reflex game, bukan tebak-tebakan lagi) ---- */
+  #stage-game { max-width: 460px; flex-direction: column; }
+  .game-card { padding: 20px; text-align:center; }
+  .game-eyebrow { font-size:11px; letter-spacing:0.1em; color:var(--text-dim); margin-bottom:2px; }
+  .game-title { font-size:19px; font-weight:800; margin-bottom: 10px; }
+
+  .rush-hud {
+    display:flex; justify-content:space-between; align-items:center;
+    font-family: 'Space Mono', monospace; font-size:13px; margin-bottom:8px;
+  }
+  .rush-score { color:#ffe27a; }
+  .rush-score b { color:#fff; font-size:17px; }
+  .rush-combo { color:#ff9d5c; font-weight:800; opacity:0; transition:opacity .15s; }
+  .rush-combo.show { opacity:1; }
+  .rush-lives { letter-spacing:3px; }
+
+  .rush-arena {
+    position: relative; height: 340px; border-radius:14px; overflow:hidden;
+    background:
+      radial-gradient(circle at 25% 20%, rgba(45,212,255,0.08), transparent 45%),
+      radial-gradient(circle at 80% 75%, rgba(160,90,255,0.08), transparent 45%),
+      #070a14;
+    border: 1px solid var(--panel-border);
+    touch-action: none;
+  }
+  .rush-arena.shake { animation: rushShake 0.25s; }
+  @keyframes rushShake {
+    0%,100% { transform: translate(0,0); }
+    20% { transform: translate(-6px,3px); }
+    40% { transform: translate(6px,-3px); }
+    60% { transform: translate(-5px,-2px); }
+    80% { transform: translate(5px,2px); }
+  }
+  .rush-arena.hit { animation: rushFlash 0.2s; }
+  @keyframes rushFlash { 50% { background-color: rgba(255,45,77,0.28); } }
+
+  .rush-hint {
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    flex-direction: column; gap:12px; text-align:center; padding:20px; color:var(--text-dim); font-size:13px;
+  }
+
+  .rush-item {
+    position:absolute; width:50px; height:50px; border:none; border-radius:50%;
+    display:flex; align-items:center; justify-content:center; font-size:24px; cursor:pointer;
+    animation: rushPop .12s ease;
+  }
+  .rush-item.coin { background: radial-gradient(circle at 35% 30%, #fff7a8, #ffc928 45%, #d88900); box-shadow:0 0 16px rgba(255,201,40,0.55); }
+  .rush-item.gem { background: radial-gradient(circle at 35% 30%, #b9e6ff, #2dd4ff 45%, #0b6fa3); box-shadow:0 0 16px rgba(45,212,255,0.55); }
+  .rush-item.star { background: radial-gradient(circle at 35% 30%, #ffe9ff, #d68cff 45%, #7a2fb0); box-shadow:0 0 16px rgba(214,140,255,0.55); }
+  .rush-item.bomb { background: radial-gradient(circle at 35% 30%, #6b6b6b, #1a1a1a 60%); box-shadow:0 0 16px rgba(255,45,77,0.4); }
+  .rush-item.popped { transform: scale(1.7); opacity:0; transition: all .15s ease; }
+  .rush-item.missed { transform: scale(0.6); opacity:0; transition: all .18s ease; }
+  @keyframes rushPop { from { transform: scale(0.3); opacity:0; } to { transform: scale(1); opacity:1; } }
+
+  .rush-item::after {
+    content:""; position:absolute; inset:-4px; border-radius:50%;
+    border:2px solid rgba(255,255,255,0.5);
+    animation: rushCountdown var(--life, 1000ms) linear forwards;
+  }
+  @keyframes rushCountdown { from { opacity:0.9; } to { opacity:0; transform: scale(1.35); } }
+
+  .rush-startbtn {
+    padding: 12px 26px; border-radius:10px; border:none;
+    background: var(--cyan); color:#001b24; font-weight:800; font-size:13px; letter-spacing:0.04em; cursor:pointer;
+  }
+
+  .next-hint { margin-top: 12px; font-size: 11px; color: var(--text-dim); }
+
+  /* ---- Stage: LOCKOUT (fullscreen, dramatis) ---- */
+  #stage-locked {
+    position: fixed; inset: 0; background: #08000a; z-index: 999; overflow-y:auto;
+    flex-direction: column; align-items:center; padding: 30px 16px 50px;
+    animation: pulseBg 1.2s ease-in-out infinite;
+  }
+  @keyframes pulseBg {
+    0%, 100% { background: #0a0006; }
+    50% { background: #1c0009; }
+  }
+  .lock-icon { font-size: 50px; margin-top: 10px; animation: shake 0.3s infinite; }
+  @keyframes shake { 0%,100%{transform:translateX(0) rotate(0)} 25%{transform:translateX(-3px) rotate(-2deg)} 75%{transform:translateX(3px) rotate(2deg)} }
+  .lock-title { font-size: 26px; font-weight: 800; color: #ff2d4d; text-shadow: 0 0 22px rgba(255,45,77,0.8); letter-spacing: 0.03em; text-align:center; margin-top:6px; }
+  .lock-sub { font-size: 12.5px; color: #ff8fa3; margin-top: 8px; text-align:center; max-width: 440px; }
+  .ip-line { margin-top:14px; font-size:12.5px; color:#ffb3bf; background:rgba(255,45,77,0.08); border:1px solid rgba(255,45,77,0.3); padding:6px 14px; border-radius:20px; }
+  .ip-line b { color:#fff; }
+
+  .terminal {
+    margin-top: 18px; width: 100%; max-width: 460px; background: #0a0a0a; border: 1px solid #3a0410;
+    border-radius: 8px; padding: 14px; font-size: 11.5px; color: #ff5c72; line-height: 1.75; min-height: 100px;
+  }
+  .terminal .line { opacity: 0; animation: fadeIn 0.25s forwards; }
+  @keyframes fadeIn { to { opacity: 1; } }
+  .blink { animation: blink 1s step-start infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .exfil-box { margin-top: 14px; width:100%; max-width:460px; background:#0a0a0a; border:1px solid #3a0410; border-radius:8px; padding:14px; }
+  .exfil-title { font-size:10.5px; letter-spacing:0.08em; color:#ff8fa3; margin-bottom:10px; }
+  .exfil-row { display:flex; justify-content:space-between; align-items:center; font-size:11.5px; color:#ffb3bf; padding:5px 0; opacity:0; animation: fadeIn 0.25s forwards; border-bottom: 1px solid #250309; }
+  .exfil-row:last-child { border-bottom:none; }
+  .exfil-status { font-size:10px; color:#ff5c72; }
+  .exfil-status.done { color: #ff2d4d; font-weight:700; }
+
+  /* ---- Stage: invalid ---- */
+  #stage-invalid { max-width: 400px; }
+</style>
+</head>
+<body>
+
+  <!-- STAGE: registrasi mandiri (dipakai kalau buka /join) -->
+  <div class="stage" id="stage-register">
+    <div class="panel reg-card">
+      <div class="reg-title">Yuk daftar dulu!</div>
+      <div class="reg-sub">Isi nama kamu buat mulai sesi tebak-tebakan seru</div>
+      <input type="text" id="regName" placeholder="Nama kamu" autocomplete="off" />
+      <button class="reg-btn" id="regBtn">MULAI</button>
+    </div>
+  </div>
+
+  <!-- STAGE: COIN RUSH — game reflex cepat -->
+  <div class="stage" id="stage-game">
+    <div class="panel game-card">
+      <div class="game-eyebrow">COIN RUSH</div>
+      <div class="game-title">Tap secepat mungkin!</div>
+
+      <div class="rush-hud">
+        <div class="rush-score">💰 <b id="rushScore">0</b></div>
+        <div class="rush-combo" id="rushCombo">COMBO x1</div>
+        <div class="rush-lives" id="rushLives">❤❤❤</div>
+      </div>
+
+      <div class="rush-arena" id="rushArena">
+        <div class="rush-hint" id="rushHint">
+          <div>Tap 🪙💎⭐ yang muncul secepat mungkin.<br />Jangan tap 💣 bom!</div>
+          <button type="button" class="rush-startbtn" id="rushStartBtn">▶ MULAI MAIN</button>
+        </div>
+      </div>
+
+      <div class="next-hint">Main terus sampai host lanjut ke sesi berikutnya...</div>
+    </div>
+  </div>
+
+  <!-- STAGE: lockout dramatis (dipicu host) -->
+  <div class="stage" id="stage-locked">
+    <div class="lock-icon">⚠</div>
+    <div class="lock-title">SYSTEM COMPROMISED</div>
+    <div class="lock-sub">Akses tidak sah terdeteksi pada perangkat ini. Jangan tutup atau refresh halaman.</div>
+    <div class="ip-line">IP Anda terdeteksi: <b id="ipText">mendeteksi...</b></div>
+    <div class="terminal" id="terminalBox"></div>
+    <div class="exfil-box">
+      <div class="exfil-title">MENGUNGGAH DATA PERANGKAT...</div>
+      <div id="exfilList"></div>
+    </div>
+  </div>
+
+  <!-- STAGE: invalid link -->
+  <div class="stage" id="stage-invalid">
+    <div class="panel game-card">
+      <div class="eyebrow glow-red">LINK TIDAK VALID</div>
+      <p style="font-size:13px; color:var(--text-dim);">Link ini tidak ditemukan. Minta link baru ke fasilitator.</p>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const path = window.location.pathname;
+    const parts = path.split("/").filter(Boolean);
+    const isJoin = parts[0] === "join";
+    let id = isJoin ? null : parts[1]; // /p/:id
+    const socket = io();
+
+    function show(stageId) {
+      document.querySelectorAll(".stage").forEach(s => s.classList.remove("active"));
+      document.getElementById(stageId).classList.add("active");
+    }
+
+    socket.on("connect", () => {
+      if (isJoin) {
+        show("stage-register");
+      } else {
+        socket.emit("participant:hello", { id });
+        show("stage-game");
+      }
+    });
+    socket.on("participant:invalid", () => show("stage-invalid"));
+
+    // ── Registrasi mandiri ──
+    document.getElementById("regBtn").addEventListener("click", doRegister);
+    document.getElementById("regName").addEventListener("keydown", (e) => { if (e.key === "Enter") doRegister(); });
+    function doRegister() {
+      ensureAudioCtx();
+      enterFullscreen();
+      const name = document.getElementById("regName").value;
+      socket.emit("participant:register", { name }, (res) => {
+        if (res && res.id) {
+          id = res.id;
+          show("stage-game");
+        }
+      });
+    }
+
+    // ── COIN RUSH: game reflex cepat ──
+    const rushArena = document.getElementById("rushArena");
+    const rushHint = document.getElementById("rushHint");
+    const rushScoreEl = document.getElementById("rushScore");
+    const rushComboEl = document.getElementById("rushCombo");
+    const rushLivesEl = document.getElementById("rushLives");
+
+    let rushRunning = false;
+    let rushScoreVal = 0;
+    let rushCombo = 1;
+    let rushLivesVal = 3;
+    let spawnTimeoutId = null;
+
+    function updateScoreUI() { rushScoreEl.textContent = rushScoreVal; }
+    function updateComboUI() {
+      rushComboEl.textContent = "COMBO x" + rushCombo;
+      rushComboEl.classList.toggle("show", rushCombo > 1);
+    }
+    function updateLivesUI() {
+      rushLivesEl.textContent = "❤".repeat(rushLivesVal) + "♡".repeat(3 - rushLivesVal);
+    }
+
+    function spawnItem() {
+      if (!rushRunning) return;
+      const rect = rushArena.getBoundingClientRect();
+      const size = 50;
+      const maxX = Math.max(0, rect.width - size);
+      const maxY = Math.max(0, rect.height - size);
+
+      const bombChance = Math.min(0.32, 0.10 + rushScoreVal * 0.004);
+      const isBomb = Math.random() < bombChance;
+
+      let type = "bomb", points = 0, emoji = "💣";
+      if (!isBomb) {
+        const r = Math.random();
+        if (r < 0.6) { type = "coin"; points = 1; emoji = "🪙"; }
+        else if (r < 0.9) { type = "gem"; points = 2; emoji = "💎"; }
+        else { type = "star"; points = 3; emoji = "⭐"; }
+      }
+
+      const life = Math.max(550, 1300 - rushScoreVal * 20);
+
+      const el = document.createElement("button");
+      el.type = "button";
+      el.className = "rush-item " + type;
+      el.textContent = emoji;
+      el.style.left = Math.random() * maxX + "px";
+      el.style.top = Math.random() * maxY + "px";
+      el.style.setProperty("--life", life + "ms");
+      rushArena.appendChild(el);
+
+      const missTimer = setTimeout(() => {
+        if (!el.isConnected) return;
+        el.classList.add("missed");
+        if (type !== "bomb") { rushCombo = 1; updateComboUI(); }
+        setTimeout(() => el.remove(), 200);
+      }, life);
+
+      el.addEventListener("click", () => {
+        clearTimeout(missTimer);
+        el.classList.add("popped");
+        setTimeout(() => el.remove(), 150);
+        tapFeedback(type === "bomb");
+
+        if (type === "bomb") {
+          rushLivesVal = Math.max(0, rushLivesVal - 1);
+          rushCombo = 1;
+          rushArena.classList.add("hit", "shake");
+          setTimeout(() => rushArena.classList.remove("hit", "shake"), 250);
+          updateLivesUI();
+          updateComboUI();
+          if (rushLivesVal <= 0) { rushLivesVal = 3; updateLivesUI(); } // waiting-room game, jangan sampai "game over" beneran
+        } else {
+          rushScoreVal += points * rushCombo;
+          rushCombo = Math.min(8, rushCombo + 1);
+          updateScoreUI();
+          updateComboUI();
+        }
+      }, { once: true });
+    }
+
+    function scheduleSpawn() {
+      if (!rushRunning) return;
+      spawnItem();
+      const interval = Math.max(380, 950 - rushScoreVal * 15);
+      spawnTimeoutId = setTimeout(scheduleSpawn, interval);
+    }
+
+    function startRush() {
+      ensureAudioCtx();
+      enterFullscreen();
+      rushHint.style.display = "none";
+      rushRunning = true;
+      rushScoreVal = 0; rushCombo = 1; rushLivesVal = 3;
+      updateScoreUI(); updateComboUI(); updateLivesUI();
+      rushArena.innerHTML = "";
+      scheduleSpawn();
+    }
+
+    function stopRush() {
+      rushRunning = false;
+      if (spawnTimeoutId) clearTimeout(spawnTimeoutId);
+    }
+
+    document.getElementById("rushStartBtn").addEventListener("click", startRush);
+
+    // beep pendek buat feedback tap (positif buat koin, buzzer buat bom)
+    function tapFeedback(isBad) {
+      try {
+        const ctx = ensureAudioCtx();
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = isBad ? "sawtooth" : "triangle";
+        osc.frequency.value = isBad ? 160 : 1000 + Math.random() * 300;
+        gain.gain.value = 0.0001;
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        const peak = isBad ? 0.18 : 0.12;
+        const dur = isBad ? 0.26 : 0.1;
+        gain.gain.linearRampToValueAtTime(peak, now + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+        osc.start(now);
+        osc.stop(now + dur + 0.02);
+      } catch (e) { /* abaikan */ }
+    }
+
+    // ── Lockout dramatis, dipicu host lewat socket ──
+    const TERMINAL_LINES = [
+      "> connection_check ... FAILED",
+      "> firewall bypass ... SUCCESS",
+      "> unauthorized session detected",
+      "> escalating privileges ...",
+      "> scanning local storage ...",
+      "> extracting browser session tokens ...",
+      "> contacting remote host (185.220.x.x) ...",
+      "> ⚠ device flagged as COMPROMISED",
+    ];
+
+    const FAKE_FILES = [
+      "Dokumen_Pribadi.pdf",
+      "Foto_Galeri_2026.zip",
+      "Riwayat_Chat_WhatsApp.db",
+      "Password_Tersimpan.txt",
+      "Kontak_Telepon.vcf",
+      "Riwayat_Browser.log",
+    ];
+
+    // ── Fullscreen + pengaman "susah keluar" saat lockout aktif ──
+    // Catatan jujur: browser TIDAK PERNAH ngasih web page kontrol 100% buat
+    // "mengunci" HP orang — tombol Home/power selalu di luar kendali web page,
+    // itu memang sengaja dibatasi browser demi keamanan pengguna. Yang bisa kita
+    // lakukan: masuk fullscreen beneran + persulit cara keluar yang umum dipakai
+    // (klik kanan, tombol back, nutup tab).
+    let isLockedNow = false;
+
+    function enterFullscreen() {
+      const el = document.documentElement;
+      const req = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+      if (req) req.call(el).catch(() => {}); // diam-diam gagal di browser yang nggak support (mis. Safari iPhone lama), overlay CSS tetap jalan sbg cadangan
+    }
+
+    function exitFullscreenNow() {
+      const exit = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+      if (exit && document.fullscreenElement) exit.call(document).catch(() => {});
+    }
+
+    // Kalau peserta berhasil keluar dari fullscreen (mis. tekan Esc) SAAT masih
+    // terkunci, coba masuk fullscreen lagi otomatis.
+    document.addEventListener("fullscreenchange", () => {
+      if (isLockedNow && !document.fullscreenElement) {
+        enterFullscreen();
+      }
+    });
+
+    // Blokir klik kanan / long-press menu saat terkunci
+    document.addEventListener("contextmenu", (e) => {
+      if (isLockedNow) e.preventDefault();
+    });
+
+    // Persulit tombol "back" saat terkunci: setiap kali user mundur,
+    // langsung dorong maju lagi ke state yang sama.
+    function armBackTrap() {
+      history.pushState({ locked: true }, "", location.href);
+    }
+    window.addEventListener("popstate", () => {
+      if (isLockedNow) armBackTrap();
+    });
+
+    // Warning bawaan browser kalau user coba nutup/reload tab saat terkunci
+    window.addEventListener("beforeunload", (e) => {
+      if (isLockedNow) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    });
+
+    // ── Sound design: sirine + alarm beep (bukan cuma 1 nada doang) ──
+    let audioCtx = null;
+    let sirenNodes = null;
+    let alarmBeepInterval = null;
+
+    function ensureAudioCtx() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === "suspended") audioCtx.resume();
+      return audioCtx;
+    }
+
+    // Nada sirine yang naik-turun terus-menerus (kayak alarm keamanan),
+    // dilapis sama beep cepat berulang biar makin mencekam.
+    // Sengaja LANGSUNG full volume dari detik pertama — efek kaget, bukan fade-in.
+    function startSiren() {
+      try {
+        const ctx = ensureAudioCtx();
+        const now = ctx.currentTime;
+
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sawtooth";
+        osc.frequency.value = 760;
+        gain.gain.value = 0.13; // langsung kenceng, tanpa fade-in
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        // LFO buat bikin frekuensi naik-turun cepat (efek "wail" sirine ambulans)
+        const lfo = ctx.createOscillator();
+        const lfoGain = ctx.createGain();
+        lfo.type = "sine";
+        lfo.frequency.value = 2.4; // lebih cepat = lebih panik, bukan sirine gedung yang santai
+        lfoGain.gain.value = 300;
+        lfo.connect(lfoGain);
+        lfoGain.connect(osc.frequency);
+
+        osc.start();
+        lfo.start();
+
+        sirenNodes = { osc, gain, lfo };
+
+        alarmBeep(); // beep pertama langsung bareng sirine, biar makin kaget
+        alarmBeepInterval = setInterval(alarmBeep, 260); // jauh lebih rapat dari sebelumnya
+      } catch (e) { /* audio tidak tersedia, abaikan */ }
+    }
+
+    function alarmBeep() {
+      try {
+        const ctx = ensureAudioCtx();
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "square";
+        osc.frequency.value = 1600;
+        gain.gain.value = 0.0001;
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        gain.gain.linearRampToValueAtTime(0.17, now + 0.008); // naik cepet, hampir instan
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.11);
+        osc.start(now);
+        osc.stop(now + 0.13);
+      } catch (e) { /* abaikan */ }
+    }
+
+    function stopSiren() {
+      if (alarmBeepInterval) {
+        clearInterval(alarmBeepInterval);
+        alarmBeepInterval = null;
+      }
+      if (sirenNodes && audioCtx) {
+        try {
+          const now = audioCtx.currentTime;
+          sirenNodes.gain.gain.linearRampToValueAtTime(0.0001, now + 0.25);
+          sirenNodes.osc.stop(now + 0.3);
+          sirenNodes.lfo.stop(now + 0.3);
+        } catch (e) { /* abaikan */ }
+        sirenNodes = null;
+      }
+    }
+
+    function playTerminal() {
+      const box = document.getElementById("terminalBox");
+      box.innerHTML = "";
+      TERMINAL_LINES.forEach((text, i) => {
+        const div = document.createElement("div");
+        div.className = "line";
+        div.style.animationDelay = (i * 0.35) + "s";
+        div.textContent = text;
+        box.appendChild(div);
+      });
+      const cursor = document.createElement("div");
+      cursor.className = "line blink";
+      cursor.style.animationDelay = (TERMINAL_LINES.length * 0.35) + "s";
+      cursor.textContent = "> _";
+      box.appendChild(cursor);
+    }
+
+    function playExfil() {
+      const list = document.getElementById("exfilList");
+      list.innerHTML = "";
+      FAKE_FILES.forEach((name, i) => {
+        const row = document.createElement("div");
+        row.className = "exfil-row";
+        row.style.animationDelay = (i * 0.4 + 1) + "s";
+        row.innerHTML = `<span>${name}</span><span class="exfil-status" id="fs-${i}">mengunggah...</span>`;
+        list.appendChild(row);
+        setTimeout(() => {
+          const el = document.getElementById(`fs-${i}`);
+          if (el) { el.textContent = "✓ terkirim"; el.classList.add("done"); }
+        }, (i * 400 + 1000) + 900);
+      });
+    }
+
+    function detectIp() {
+      const el = document.getElementById("ipText");
+      fetch("https://api.ipify.org?format=json")
+        .then((r) => r.json())
+        .then((d) => { el.textContent = d.ip; })
+        .catch(() => { el.textContent = "tidak diketahui"; });
+    }
+
+    socket.on("attack:trigger", () => {
+      stopRush();
+      isLockedNow = true;
+      enterFullscreen();
+      armBackTrap();
+      show("stage-locked");
+      playTerminal();
+      playExfil();
+      detectIp();
+      startSiren();
+      if (navigator.vibrate) navigator.vibrate([300, 100, 300, 100, 500, 100, 500]);
+    });
+
+    socket.on("attack:end", () => {
+      isLockedNow = false;
+      stopSiren();
+      exitFullscreenNow();
+      if (navigator.vibrate) navigator.vibrate(0);
+      window.location.href = "/education.html";
+    });
+  </script>
+</body>
+</html>
