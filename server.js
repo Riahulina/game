@@ -115,18 +115,70 @@ app.get("/join", (req, res) => {
 
 function triggerParticipant(p) {
   if (!p || p.status !== "joined") return;
-  p.status = "locked";
-  logEvent(p.id, "attack_triggered");
-  io.to(`p:${p.id}`).emit("attack:trigger");
 
-  if (p.lockTimer) clearTimeout(p.lockTimer);
+  // Batalkan timer attack sebelumnya kalau ada
+  if (p.lockTimer) {
+    clearTimeout(p.lockTimer);
+    p.lockTimer = null;
+  }
+
+  // Setiap trigger punya ID/session sendiri
+  const attackId = nanoid(6);
+
+  p.status = "locked";
+  p.attackId = attackId;
+
+  logEvent(p.id, "attack_triggered");
+
+  // Hanya device dengan ID peserta ini yang menerima trigger
+  io.to(`p:${p.id}`).emit("attack:trigger", {
+    attackId,
+  });
+
+  // Auto reveal hanya untuk attack session ini
   p.lockTimer = setTimeout(() => {
-    if (p.status === "locked") {
-      p.status = "revealed";
-      logEvent(p.id, "auto_revealed");
-      io.to(`p:${p.id}`).emit("attack:end");
+    const current = participants.get(p.id);
+
+    // Jangan lakukan apa-apa kalau peserta sudah berubah
+    // atau attack session-nya sudah berbeda
+    if (
+      !current ||
+      current.status !== "locked" ||
+      current.attackId !== attackId
+    ) {
+      return;
     }
+
+    current.status = "revealed";
+    current.attackId = null;
+    current.lockTimer = null;
+
+    logEvent(current.id, "auto_revealed");
+
+    io.to(`p:${current.id}`).emit("attack:end", {
+      attackId,
+    });
   }, AUTO_REVEAL_MS);
+}
+
+function endParticipant(p) {
+  if (!p || p.status !== "locked") return;
+
+  const attackId = p.attackId;
+
+  if (p.lockTimer) {
+    clearTimeout(p.lockTimer);
+    p.lockTimer = null;
+  }
+
+  p.status = "revealed";
+  p.attackId = null;
+
+  logEvent(p.id, "host_revealed");
+
+  io.to(`p:${p.id}`).emit("attack:end", {
+    attackId,
+  });
 }
 
 function endParticipant(p) {
@@ -158,18 +210,27 @@ io.on("connection", (socket) => {
   // Pendaftaran mandiri lewat link /join — peserta isi nama sendiri
   socket.on("participant:register", ({ name }, callback) => {
     const id = nanoid(8);
+
     const p = {
       id,
       name: name && name.trim() ? name.trim() : `Peserta-${id}`,
       status: "joined",
       joinedAt: Date.now(),
       lastEventAt: Date.now(),
+
+      // State attack milik peserta ini
+      attackId: null,
+      lockTimer: null,
+
       events: [{ type: "invited", at: Date.now() }],
     };
+
     participants.set(id, p);
     socket.data.participantId = id;
     socket.join(`p:${id}`);
+
     logEvent(id, "self_registered");
+
     if (typeof callback === "function") callback({ id });
   });
 
@@ -190,13 +251,94 @@ io.on("connection", (socket) => {
   });
 
   // Host memicu "serangan" ke satu peserta tertentu, atau semua ('all')
-  socket.on("host:trigger_attack", ({ id }) => {
-    if (!requireHost(socket)) return;
+  // Host memicu "serangan" ke satu peserta tertentu, atau semua ('all')
+  socket.on("host:trigger_attack", ({ id } = {}) => {
+    console.log("[HOST] trigger_attack:", id, "isHost:", socket.data.isHost);
+
+    if (!requireHost(socket)) {
+      console.log("[HOST] trigger_attack DITOLAK - bukan host");
+      return;
+    }
+
     const targets =
       id === "all"
         ? Array.from(participants.values()).filter((p) => p.status === "joined")
         : [participants.get(id)].filter(Boolean);
+
+    console.log(
+      "[HOST] trigger targets:",
+      targets.map((p) => `${p.name}:${p.id}:${p.status}`),
+    );
+
     targets.forEach(triggerParticipant);
+  });
+
+  // Host memicu serangan bergelombang
+  socket.on("host:trigger_wave", ({ batchSize, intervalMs } = {}) => {
+    console.log(
+      "[HOST] trigger_wave:",
+      batchSize,
+      intervalMs,
+      "isHost:",
+      socket.data.isHost,
+    );
+
+    if (!requireHost(socket)) {
+      console.log("[HOST] trigger_wave DITOLAK - bukan host");
+      return;
+    }
+
+    const size = Math.max(1, parseInt(batchSize, 10) || 5);
+    const gap = Math.max(500, parseInt(intervalMs, 10) || 2000);
+
+    const targets = Array.from(participants.values()).filter(
+      (p) => p.status === "joined",
+    );
+
+    let i = 0;
+
+    function fireNext() {
+      const batch = targets.slice(i, i + size);
+
+      if (batch.length === 0) return;
+
+      console.log(
+        "[HOST] wave targets:",
+        batch.map((p) => `${p.name}:${p.id}`),
+      );
+
+      batch.forEach(triggerParticipant);
+
+      i += size;
+
+      if (i < targets.length) {
+        setTimeout(fireNext, gap);
+      }
+    }
+
+    fireNext();
+  });
+
+  // Host mengakhiri "serangan"
+  socket.on("host:end_attack", ({ id } = {}) => {
+    console.log("[HOST] end_attack:", id, "isHost:", socket.data.isHost);
+
+    if (!requireHost(socket)) {
+      console.log("[HOST] end_attack DITOLAK - bukan host");
+      return;
+    }
+
+    const targets =
+      id === "all"
+        ? Array.from(participants.values()).filter((p) => p.status === "locked")
+        : [participants.get(id)].filter(Boolean);
+
+    console.log(
+      "[HOST] end targets:",
+      targets.map((p) => `${p.name}:${p.id}:${p.status}`),
+    );
+
+    targets.forEach(endParticipant);
   });
 
   // Host memicu serangan bergelombang: N orang setiap interval detik
