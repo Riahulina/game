@@ -69,19 +69,33 @@ function logEvent(id, type, meta = {}) {
 }
 
 // ── REST: fasilitator membuat link peserta baru dari host dashboard ──
+// ── REST: fasilitator membuat link peserta baru dari host dashboard ──
 app.post("/api/participants", (req, res) => {
   if (req.headers["x-host-token"] !== HOST_PASSWORD)
     return res.status(401).json({ error: "unauthorized" });
 
   const { name } = req.body;
-
   const id = nanoid(8);
+
+  participants.set(id, {
+    id,
+    name: name && name.trim() ? name.trim() : `Peserta-${id}`,
+    status: "invited",
+    joinedAt: null,
+    lastEventAt: Date.now(),
+    events: [{ type: "invited", at: Date.now() }],
+  });
+
+  broadcastState();
+  res.json({ id, link: `/p/${id}` });
+});
 
 app.post("/api/reset", (req, res) => {
   if (req.headers["x-host-token"] !== HOST_PASSWORD)
     return res.status(401).json({ error: "unauthorized" });
+
   participants.forEach((p) => p.lockTimer && clearTimeout(p.lockTimer));
-  participants.forEach((p) => p.lockTimer && clearTimeout(p.lockTimer));
+
   participants.clear();
   broadcastState();
   res.json({ ok: true });
